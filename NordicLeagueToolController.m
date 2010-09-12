@@ -7,14 +7,30 @@
 //
 
 #import "NordicLeagueToolController.h"
+#import <Carbon/Carbon.h>
+
 #define copyGameNameItem 5300
 //#define infoMenuItemTag 5010
 
 
 @implementation NordicLeagueToolController
 
+OSStatus myHotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void *userData);
+
 -(void)awakeFromNib
 {
+	EventHotKeyRef	myHotKeyRef;
+	EventHotKeyID	myHotKeyID;
+	EventTypeSpec	eventType;
+	eventType.eventClass=kEventClassKeyboard;
+	eventType.eventKind=kEventHotKeyPressed;
+	InstallApplicationEventHandler(&myHotKeyHandler,1,&eventType,NULL,NULL);
+	
+	myHotKeyID.signature='up';
+	myHotKeyID.id=1;
+	
+	RegisterEventHotKey(49, controlKey+optionKey, myHotKeyID, GetApplicationEventTarget(), 0, &myHotKeyRef);
+	
 	//Create the NSStatusBar and set its length
 	statusItem = [[[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength] retain];
 	
@@ -33,6 +49,18 @@
 	[statusItem setToolTip:@"NordicLeague Tool v0.1"];
 	[statusItem setMenu:statusMenu];
 	[statusItem setEnabled:YES];
+	
+	mySelf = self;
+	
+	hotkeySuccess = [NSSound soundNamed:@"mmmm"];
+	hotkeyFullOrError =[NSSound soundNamed:@"doh"];
+	
+	[self update];
+	timer = [NSTimer scheduledTimerWithTimeInterval:10.0
+											 target:self
+										   selector:@selector(update)
+										   userInfo:nil
+											repeats: YES];
 }
 
 -(void)dealloc
@@ -40,15 +68,18 @@
 	[statusItem release];
 	//[gameName release];
 	//[playerCount release];
-	//˘[aString release];
+	//[aString release];
+	[mySelf release];
+	[hotkeySuccess release];
+	[hotkeyFullOrError release];
 	
 	[super dealloc];
 }
 
- 
--(IBAction)refresh:(id)sender{
-	
+-(void)update
+{
 	// Introduce variables
+	NSLog(@"In update");
 	//NSURL *url;
 	//NSString *urlString = @"http://jozan.fi/dota/get/gamename/display/simple";
 	
@@ -67,7 +98,12 @@
 	
 	[statusItem setAttributedTitle:atitle];
 	[atitle release];
-	
+}
+
+ 
+-(IBAction)refresh:(id)sender
+{
+	[self update];
 }
 
 - (NSAttributedString *)formatString:(NSString *)str {
@@ -146,11 +182,23 @@
 	[statusItem setAttributedTitle:atitle];
 	[statusItem setToolTip:@"NordicLeague Tool v0.1"];
 	
+	if (autoCopy || bypassAutoCopy)
+	{
 	// Automatically copy game name to clipboard
-	pasteBoard = [NSPasteboard generalPasteboard];
-	[pasteBoard declareTypes:[NSArray arrayWithObjects:NSStringPboardType, nil] owner:nil];
-	[pasteBoard setString:gameName forType:NSStringPboardType];
-	
+		pasteBoard = [NSPasteboard generalPasteboard];
+		[pasteBoard declareTypes:[NSArray arrayWithObjects:NSStringPboardType, nil] owner:nil];
+		[pasteBoard setString:gameName forType:NSStringPboardType];
+		
+		if (bypassAutoCopy)
+		{
+			if ([playerCount isEqualToString:@"10"])
+				[hotkeyFullOrError play];
+			else
+				[hotkeySuccess play];
+			
+			bypassAutoCopy = NO;
+		}
+	}
 	isUpdated = YES;
 	
 	
@@ -201,6 +249,45 @@
 	[NSApp orderFrontStandardAboutPanel:nil];
 }
 
+-(IBAction)toggleAutoRefresh:(id)sender{
+	
+	if (autoUpdate)
+	{
+		[timer invalidate];
+		autoUpdate = NO;
+		[sender setState:NSOffState];
+		
+	}
+	else {
+		[self update];
+		timer = [NSTimer scheduledTimerWithTimeInterval:10.0
+												 target:self
+											   selector:@selector(update)
+											   userInfo:nil
+												repeats: YES];
+		autoUpdate = YES;
+		[sender setState:NSOnState];
+	}
+	
+	
+}
+
+-(IBAction)toggleAutoCopy:(id)sender{
+	
+	if (autoCopy)
+	{
+		autoCopy = NO;
+		[sender setState:NSOffState];
+		
+	}
+	else {
+		autoCopy = YES;
+		[sender setState:NSOnState];
+	}
+	
+	
+}
+
 
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
 	
@@ -237,6 +324,19 @@
 	{
 		return YES;
 	}
+	
+}
+
+OSStatus myHotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void *userData)
+{
+	NSLog(@"Hotkey..");
+	// hotkey request to update and copy gamename.
+	
+	if (!autoCopy)
+		bypassAutoCopy = YES;
+	[mySelf update];
+
+    return noErr;
 	
 }
 
