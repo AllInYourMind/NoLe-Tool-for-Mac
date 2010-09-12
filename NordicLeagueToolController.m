@@ -332,8 +332,7 @@ OSStatus myHotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void
 	NSLog(@"Hotkey..");
 	// hotkey request to update and copy gamename.
 	
-	if (!autoCopy)
-		bypassAutoCopy = YES;
+	bypassAutoCopy = YES;
 	[mySelf update];
 
     return noErr;
