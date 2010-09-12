@@ -46,7 +46,7 @@ OSStatus myHotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void
 	[atitle release];
 	
 	[statusItem setHighlightMode:YES];
-	[statusItem setToolTip:@"NordicLeague Tool v0.1"];
+	[statusItem setToolTip:@"NordicLeague Tool v0.2"];
 	[statusItem setMenu:statusMenu];
 	[statusItem setEnabled:YES];
 	
@@ -56,7 +56,7 @@ OSStatus myHotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void
 	hotkeyFullOrError =[NSSound soundNamed:@"doh"];
 	
 	[self update];
-	timer = [NSTimer scheduledTimerWithTimeInterval:10.0
+	timer = [NSTimer scheduledTimerWithTimeInterval:20.0
 											 target:self
 										   selector:@selector(update)
 										   userInfo:nil
@@ -79,11 +79,8 @@ OSStatus myHotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void
 -(void)update
 {
 	// Introduce variables
-	NSLog(@"In update");
-	//NSURL *url;
-	//NSString *urlString = @"http://jozan.fi/dota/get/gamename/display/simple";
 	
-	NSURL *url = [NSURL URLWithString:@"http://jozan.fi/dota/get/gamename/display/simple"];
+	NSURL *url = [NSURL URLWithString:@"http://www.nordicleague.eu/api/games/s"];
 	ASIHTTPRequest *request = [ASIHTTPRequest requestWithURL:url];
 	[request setDelegate:self];
 	[request startAsynchronous];
@@ -251,8 +248,7 @@ OSStatus myHotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void
 
 -(IBAction)toggleAutoRefresh:(id)sender{
 	
-	if (autoUpdate)
-	{
+	if (autoUpdate) {
 		[timer invalidate];
 		autoUpdate = NO;
 		[sender setState:NSOffState];
@@ -260,76 +256,41 @@ OSStatus myHotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void
 	}
 	else {
 		[self update];
-		timer = [NSTimer scheduledTimerWithTimeInterval:10.0
+		timer = [NSTimer scheduledTimerWithTimeInterval:20.0
 												 target:self
 											   selector:@selector(update)
 											   userInfo:nil
-												repeats: YES];
+												repeats:YES];
 		autoUpdate = YES;
 		[sender setState:NSOnState];
 	}
-	
 	
 }
 
 -(IBAction)toggleAutoCopy:(id)sender{
 	
-	if (autoCopy)
-	{
+	if (autoCopy) {
 		autoCopy = NO;
 		[sender setState:NSOffState];
-		
 	}
 	else {
 		autoCopy = YES;
 		[sender setState:NSOnState];
 	}
-	
-	
 }
-
 
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
 	
 	NSInteger tag = [item tag];
-	//NSObject *lastRefreshedMenuItem = [statusMenu itemWithTag:infoMenuItemTag];
-	
-	//NSLog(@"%i",infoMenuItemTag);
-	//NSLog(lastRefreshedMenuItem);
-	
-	//yyyy-MM-dd HH:mm:ss VVVV
-	
 	if (tag == copyGameNameItem && isUpdated == NO)
-	{
-		//NSLog(@"Do I repeat myself here?");
 		return NO;
-		
-	}
-	/*
-	else if (tag == infoMenuItemTag && isUpdated == YES)
-	{
-		relativeTimeStamp = [NSDateFormatter dateDifferenceStringFromString:lastRefreshedTimestamp
-																 withFormat:@"yyyy-MM-dd HH:mm:ss VVVV"];
-		//[lastRefreshedTimestamp release];
-		
-		[lastRefreshedMenuItem setTitle:relativeTimeStamp];
-		//[lastRefreshedMenuItem setTitle:@"Last refreshed: ---"];
-		
-		//NSLog(@"Why do I repeat myself?");
-		
-		return YES;
-		
-	}*/
 	else
-	{
 		return YES;
-	}
 	
 }
 
 OSStatus myHotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void *userData)
 {
-	NSLog(@"Hotkey..");
 	// hotkey request to update and copy gamename.
 	
 	bypassAutoCopy = YES;
